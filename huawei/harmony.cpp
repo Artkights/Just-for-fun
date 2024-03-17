@@ -1,288 +1,347 @@
 #include <iostream>   
 #include <vector>  
-#include <queue>     
+#include <queue>
+#include <set>
+#include <functional>
+#include <algorithm>
+#include<cmath>
+#include <utility>
 using namespace std;
-
 const int n = 200;
 /*机器人数量*/const int robot_num = 10;
 /*船数量*/const int boat_num = 5;
 /*泊位数量*/const int berth_num = 10;
 const int N = 210;
 
-bool robot_judge(int x, int y, int mbx, int mby);
-int robot_pull(int ID/*机器人ID*/);
-int robot_get(int ID/*机器人ID*/);
-int boat_ship(int ID/*船ID*/, int pos/*泊位ID,-1为虚拟点*/);
-
 /*机器人*/struct Robot//船的初始位置为虚拟点
 {
-    /*机器人横坐标*/int x;
-    /*机器人纵坐标*/int y;
-    /*是否携带货物*/int goods;//0为未携带，1为携带
-    /*机器人状态*/int status;
-    /*机器人目标货物横坐标*/int mbx=-1;
-    /*机器人目标货物纵坐标*/int mby;
-    /*机器人目标泊位ID*/int id;
-}robot[robot_num];
+	int x;/*交互输入信息，机器人横坐标*/
+	int y;/*交互输入信息，机器人纵坐标*/
+	int goods;//交互输入信息，是否携带货物,0为未携带，1为携带
+	int status = 0;/*0为空闲，1为运输中*/
+	int mbx;/*机器人目标货物横坐标*/
+	int mby;/*机器人目标货物纵坐标*/
+	int id;/*机器人目标泊位ID*/
+	int time = 0;//机器人移动的步数
+	char road[401];/*机器人运动路径*/
+}robot[robot_num];/*机器人*/
 
 /*泊位*/struct Berth
 {
-    /*横坐标*/int x;
-    /*纵坐标*/int y;
-    /*运输时间*/int transport_time;//从泊位运输到虚拟点的帧数
-    /*装载速度*/int loading_speed;//每帧装载的货物数
-    /*装载货物数量*/int goods_num = 0;
-    /*泊位ID*/int ID;//用于输出给定的泊位ID
-    /*泊位序号*/int id;//用于记录泊位的下标
-    /*装货的船的序号*/int boat_id;
-}berth[berth_num];
+	int x;/*泊位横坐标*/
+	int y;/*泊位纵坐标*/
+	int transport_time;//运输时间：从泊位运输到虚拟点的帧数
+	int loading_speed;//装载速度：每帧装载的货物数
+	int goods_num = 0;/*装载货物数量*/
+	int boat_id;/*装货的船的序号*/
+	int state = 0;/*泊位的状态，0为空闲，1为有船,2为被视为目标*/
+}berth[berth_num];/*泊位*/
 
 /*泊位选择*/struct Berth_choose
 {
-    Berth berth;
-    int distance;
-};
+	Berth berth;
+	int distance;//计算机器人到泊位的距离
+};/*泊位选择*/
 
 /*船*/struct Boat
 {
-    /*装载货物数量*/int num=0;
-    /*目的地*/int pos;/*目标泊位ID,前往虚拟点则为-1*/
-    /*船的状态*/int status;//0为移动中，1为正常运行（装货或运输完成）,2为泊位外等待
-    /*前往泊位的序号*/int id;
-}boat[boat_num];
+	int num = 0;/*装载货物数量*/
+	int pos;/*交互输入信息，目的地：目标泊位ID,前往虚拟点则为-1*/
+	int status;//交互输入信息，船的状态:0为移动中，1为正常运行（装货或运输完成）,2为泊位外等待
+	int id=-1;/*前往泊位的ID*/
+	int local = -1;//船当前所在泊位ID，-1为虚拟点
+}boat[boat_num];/*船*/
 
 /*货物*/struct goods
 {
-    /*货物横坐标*/int x;
-    /*货物纵坐标*/int y;
-    /*货物价值*/int val;
-    /*货物状态*/int state = 0;//0为未装载，1为机器人搬运中,2为被选为目标
+	int x;/*交互输入信息，货物横坐标*/
+	int y;/*交互输入信息，货物纵坐标*/
+	int val;/*交互输入信息，货物价值*/
+	int state = 0;//货物状态:0为未装载，1为机器人搬运中,2为被选为目标
+	int time;/*货物消失时间*/
+	int id;/*将其视为目标的机器人*/
+};/*货物*/
+
+struct node
+{
+	int x;//节点横坐标
+	int y;//节点纵坐标
+	int time;//运动次数
+	char path[401];//移动方式
 };
 
-/*以val为关键字的自定义比较函数*/bool cmp(goods& a, goods& b)
+/*以val为关键字的自定义比较函数*/struct cmp
 {
-    return a.val > b.val;
-};
+	bool operator ()(const goods& a, const goods& b)const
+	{
+		return a.val > b.val;
+	}
+
+};/*以val为关键字的自定义比较函数*/
 
 /*以distance为关键字的自定义比较函数*/struct com
 {
-    bool operator()(Berth_choose& A, Berth_choose& B)
-    {
-        return A.distance > B.distance;
-    }
+	bool operator()(const Berth_choose& A, const Berth_choose& B)const
+	{
+		return A.distance < B.distance;
+	};/*以distance为关键字的自定义比较函数*//*以distance为关键字的自定义比较函数*/
 };
 
-/*货物*/vector<goods>a;
-/*当前金钱数*/int money;
-/*船的容积*/int boat_capacity;
-/*编号*/int id;
-/*地图*/char ch[N][N];//'.'为陆地,'*'为海洋,'#'为障碍,'A'为机器人起始位置,'B'为泊位位置
-/*货物存在数量*/int goods_num=0;
-/*机器人空闲数量*/int robot_free = 10;
-/*用于循环，无实意*/int i, j;
+int zhen = 1;
+int money;/*当前金钱数*/
+int boat_capacity;/*船的容积*/
+int id;/*编号*/
+char ch[N][N];//地图:'.'为陆地,'*'为海洋,'#'为障碍,'A'为机器人起始位置,'B'为泊位位置
+set<goods, cmp>good;
 
+bool robot_judge(int ID,int x,int y,int mx,int my)//BFS，机器人能否到达目的地并记录路径
+{
+	bool robot_path[210][210] = {};//节点标记,0为可行，1为不可行
+	queue<node>robot_moving;//BFS队列
+	node a,n;
+	a.x = x;
+	a.y = y;
+	a.time = 0;
+	robot_moving.push(a);
+	while (!robot_moving.empty())
+	{
+		a = robot_moving.front();
+		if (a.x != mx || a.y != my)//若不为目的地，则出队
+		{
+			robot_moving.pop();
+		}
+		else if (a.x == mx && a.y == my)//若到达目的地,则退出循环并返回1,且向对应的机器人传递路径
+		{
+			a.path[a.time] = '\0';
+			strcpy(robot[ID].road, a.path);
+			robot[ID].time = a.time;
+			return 1;
+		}
+		if (ch[a.y][a.x + 1] != '*' && ch[a.y][a.x + 1] != '#' && robot_path[a.y][a.x + 1] == 0 && x + 1 < 200)//若地图不为海洋或障碍且标记为0，则标记并入队
+		{
+			n = a;
+			n.x++;
+			n.path[n.time] = '0';
+			n.time++;
+			robot_moving.push(n);
+			robot_path[n.y][n.x] = 1;
+		}
+		if (ch[a.y][a.x - 1] != '*' && ch[a.y][a.x - 1] != '#' && robot_path[a.y][a.x - 1] == 0 && x - 1 >= 0)//若地图不为海洋或障碍且标记为0，则标记并入队
+		{
+			n = a;
+			n.x--;
+			n.path[n.time] = '1';
+			n.time++;
+			robot_moving.push(n);
+			robot_path[n.y][n.x] = 1;
+		}
+		if (ch[a.y + 1][a.x] != '*' && ch[a.y + 1][a.x] != '#' && robot_path[a.y + 1][a.x] == 0 && y + 1 < 200)//若地图不为海洋或障碍且标记为0，则标记并入队
+		{
+			n = a;
+			n.y++;
+			n.path[n.time] = '2';
+			n.time++;
+			robot_moving.push(n);
+			robot_path[n.y][n.x] = 1;
+		}
+		if (ch[a.y - 1][a.x] != '*' && ch[a.y - 1][a.x] != '#' && robot_path[a.y - 1][a.x] == 0 && y - 1 >= 0)//若地图不为海洋或障碍且标记为0，则标记并入队
+		{
+			n = a;
+			n.y--;
+			n.path[n.time] = '3';
+			n.time++;
+			robot_moving.push(n);
+			robot_path[n.y][n.x] = 1;
+		}
+	}
+	return 0;//若遍历后未能达到目的地，则返回无法达到
+}
+int robot_search(int ID)//机器人搜索前往目的地
+{
+	if (robot[ID].goods == 0)//若机器人未携带货物，则搜索前往货物地点
+	{
+		for (auto p = good.begin();p!=good.end(); p++)
+		{		
+			if (p->time > zhen && p->state == 0 && robot_judge(ID,robot[ID].x,robot[ID].y,p->x,p->y))
+			{
+				if (robot[ID].time + zhen >= p->time)
+				{
+					memset(robot[ID].road, 0, sizeof(robot[ID].road));
+					robot[ID].time = 0;
+				}
+				else
+				{
+					robot[ID].mbx = p->x;
+					robot[ID].mby = p->y;
+					robot[ID].status = 1;
+					goods a = *p;
+					a.state = 2;
+					good.erase(p);
+					good.insert(a);
+				}
+				return 0;
+			}
+		}
+	}
+	else//若机器人携带货物，则搜索前往泊位
+	{
+		set<Berth_choose, com>a;
+		Berth_choose b;
+		for (int i = 0; i < 5; i++)
+		{
+			b.distance = abs(berth[i].x - robot[ID].x) + abs(berth[i].y - robot[ID].y);
+			b.berth = berth[i];
+			a.insert(b);
+		}
+		for (auto p = a.begin(); p != a.end(); p++)
+		{
+			if (robot_judge(ID,robot[ID].x, robot[ID].y, p->berth.x, p->berth.y))
+			{
+				robot[ID].mbx = p->berth.x;
+				robot[ID].mby = p->berth.y;
+				robot[ID].status = 1;
+				return 0;
+			}
+		}
+	}
+	return 0;
+}
+int robot_move(int ID)//机器人移动
+{
+	printf("move %d %c\n", ID, robot[ID].road[strlen(robot[ID].road)-robot[ID].time]);//依据路径移动
+	fflush(stdout);
+	robot[ID].time--;
+	if (robot[ID].time==-1)//若已经完成所有路径移动，则取或放货物
+	{
+		if (robot[ID].goods == 0)//若未携带货物，则取货
+		{
+			printf("get %d\n", ID);
+			fflush(stdout);
+			robot[ID].goods = 1;
+		}
+		else//若携带货物，则放货
+		{
+			printf("pull %d\n", ID);
+			fflush(stdout);
+			robot[ID].goods = 0;
+		}
+		memset(robot[ID].road, 0, sizeof(robot[ID].goods));
+		robot[ID].time = 0;
+		robot[ID].status = 0;
+	}
+	return 0;
+}
 /*初始化*/void Init()
 {
-    for (i = 1; i <= n; i++)
-    {
-        scanf("%s", ch[i] + 1);
-    }
-    for (i = 0; i < berth_num; i++)
-    {
-        int id;
-        scanf("%d", &id);
-        berth[id].ID = id;
-        scanf("%d%d%d%d", &berth[id].x, &berth[id].y, &berth[id].transport_time, &berth[id].loading_speed);
-        berth[id].id = i;
-    }
-    scanf("%d", &boat_capacity);
-    char okk[100];//OK,表示初始化结束
-    scanf("%s", okk);
-    printf("OK\n");
-    fflush(stdout);
+	for (int i = 1; i <= n; i++)//地图初始化
+	{
+		scanf("%s", ch[i] + 1);
+	}
+	for (int i = 0; i < berth_num; i++)//泊位初始化
+	{
+		int id;
+		scanf("%d", &id);
+		scanf("%d%d%d%d", &berth[id].x, &berth[id].y, &berth[id].transport_time, &berth[id].loading_speed);
+	}
+	scanf("%d", &boat_capacity);//船容量初始化
+	char okk[100];
+	scanf("%s", okk);
+	printf("OK\n");
+	fflush(stdout);
 }
-
-/*机器人判断能否到达*/bool robot_judge(int x, int y, int mbx, int mby)//用递归计算机器人能否到达（算法存在极大改进空间）
-{
-    if (x > mbx && ch[y][x - 1] == '.')return robot_judge(x - 1, y, mbx, mby);
-    else if (x < mbx && ch[y][x + 1] == '.')return robot_judge(x + 1, y, mbx, mby);
-    else if (y < mby && ch[y + 1][x] == '.')return robot_judge(x, y + 1, mbx, mby);
-    else if (y > mby && ch[y - 1][x] == '.')return robot_judge(x, y - 1, mbx, mby);
-    else if (x == mbx && y == mby && ch[y][x] == '.')return 1;
-    else return 0;
-}
-
-/*机器人运动*/int robot_move(int ID/*机器人ID*/)
-{
-    /*机器人运动状态*/int state;//0为右移一格，1为左移一格，2为上移一格，3为下移一格
-    if (robot[ID].x > robot[ID].mbx && ch[robot[ID].y][robot[ID].x - 1] == '.')state = 1;
-    else if (robot[ID].x < robot[ID].mbx && ch[robot[ID].y][robot[ID].x + 1] == '.')state = 0;
-    else if (robot[ID].y < robot[ID].mby && ch[robot[ID].y + 1][robot[ID].x] == '.')state = 2;
-    else if (robot[ID].y > robot[ID].mby && ch[robot[ID].y - 1][robot[ID].x] == '.')state = 3;
-    else return 0;
-    cout << "move " << ID << " " << state;
-    switch (state)
-    {
-    case 0:
-
-        robot[ID].x++;
-        break;
-    case 1:
-        robot[ID].x--;
-        break;
-    case 2:
-        robot[ID].y++;
-        break;
-    case 3:
-        robot[ID].y--;
-        break;
-    }
-    if (robot[ID].x == robot[ID].mbx && robot[ID].y == robot[ID].mby && robot[ID].goods == 0)return robot_get(ID);
-    else if (robot[ID].x == robot[ID].mbx && robot[ID].y == robot[ID].mby && robot[ID].goods == 1)return robot_pull(ID);
-    else return 0;
-}
-
-/*机器人确立货物目标*/int robot_search(int ID)
-{
-    auto p1 = a.begin();
-    auto p2 = a.end();
-    sort(p1, p2, cmp);
-    for(i=0;i<a.size()&&robot_free>0;i++)
-    {
-        if (a[i].state == 0&&robot_judge(robot[ID].x,robot[ID].y,a[i].x,a[i].y))
-        {
-            robot[ID].mbx = a[i].x;
-            robot[ID].mby = a[i].y;
-            a[i].state = 2;
-            return robot_move(ID);
-        }
-    }
-    return 0;
-}
-
-/*机器人确立泊位目标*/int robot_find(int ID)
-{
-    priority_queue<Berth_choose, vector<Berth_choose>, com>a;
-    Berth_choose b;
-    for (i = 0; i < berth_num; i++)
-    {
-        b.distance = abs(berth[i].x - robot[ID].x) + abs(berth[i].y - robot[ID].y);
-        b.berth = berth[i];
-        a.push(b);
-    }
-    b = a.top();
-    while (!robot_judge(robot[ID].x, robot[ID].y, b.berth.x, b.berth.y))
-    {
-        a.pop();
-        b = a.top();
-    }
-    robot[ID].mbx = b.berth.x;
-    robot[ID].mby = b.berth.y;
-    robot[ID].id = b.berth.id;
-    return 0;
-}
-
-/*船确立泊位目标*/int boat_search(int ID)//船的ID（本函数容易使得所有船前往第一个有货物的港口，待改进）
-{
-    for (j = 0; j < berth_num; j++)
-    {
-        if (berth[j].goods_num > 0)
-        {
-            boat_ship(ID, berth[j].ID);
-            boat[ID].id = berth[j].id;
-            break;
-        }
-    }
-    return 0;
-}
-
-/*船从虚拟点驶向泊位*/int boat_ship(int ID/*船ID*/,int pos/*泊位ID,-1为虚拟点*/)
-{
-    cout << "ship " << ID <<" " << pos << endl;
-    return 0;
-}
-
-/*机器人取货*/int robot_get(int ID/*机器人ID*/)//如果机器人在货物生成处且处于未携带货物状态，则取货成功
-{
-    cout << "get " << ID << endl;
-    robot[ID].goods = 1;
-    return robot_find(ID);
-}
-
-/*机器人放货*/int robot_pull(int ID/*机器人ID*/)//如果机器人在泊位处，并处于携带货物状态，则放置成功
-{
-    cout << "pull " << ID << endl;
-    robot[ID].goods = 0;
-    robot[ID].mbx = -1;//标记为空闲状态
-    berth[robot[ID].id].goods_num++;
-    return 0;
-}
-
-/*船从泊位驶出至虚拟点*/int boat_go(int ID/*船ID*/)
-{
-    berth[boat[ID].id].boat_id = -1;
-    cout << "go " << ID << endl;
-    return 0;
-}
-
 /*交互输入*/int Input()
 {
-    scanf("%d%d", &id, &money);//ID为帧序号
-    /*场上新增货物数量*/int num;
-    scanf("%d", &num);
-    /*货物行为*/for (i = 1; i <= num; i++)//接受货物信息并且储存到vector容器中
-    {
-        goods good;
-        scanf("%d%d%d", &good.x, &good.y, &good.val);
-        a.push_back(good);
-        goods_num++;
-    }
-    /*机器人行为*/for (i = 0; i < robot_num; i++)
-    {
-        /*机器人状态*/int sts;//0为恢复，1为正常运行
-        scanf("%d%d%d%d", &robot[i].goods, &robot[i].x, &robot[i].y, &sts);
-        if (robot[i].mbx == -1)robot_search(i);//如果机器人空闲，则对货物进行扫描并前往
-        else robot_move(i);//如果机器人有目标且未到达目的地，则移动
-    }
-    /*船行为*/for (i = 0; i < 5; i++)//卸下泊位货物装到船上，如果船的容量超了或者货物少于单次装载上限，则装到船容量满或货物为0为止
-    {
-        scanf("%d%d\n", &boat[i].status, &boat[i].pos);
-        if (boat[i].status == 1 && boat[i].pos == -1)boat_search(i);
-        else if (boat[i].status == 1 && boat[i].pos != -1 && (berth[boat[i].id].goods_num == 0 || boat[i].num == boat_capacity))boat_go(i);
-        else if (boat[i].status == 1 && boat[i].pos != -1)berth[boat[i].id].boat_id = i;
-    }
-    /*泊位装货*/for (i = 0; i < berth_num; i++)
-    {
-        if (berth[i].goods_num >= berth[i].loading_speed && boat[berth[i].boat_id].num + berth[i].loading_speed <= boat_capacity)
-        {
-            berth[i].goods_num -= berth[i].loading_speed;
-            boat[berth[i].boat_id].num += berth[i].loading_speed;
-        }
-        else if (berth[i].goods_num < berth[i].loading_speed)
-        {
-            boat[berth[i].boat_id].num -= berth[i].goods_num;
-            berth[i].goods_num = 0;
-        }
-        else if (boat[berth[i].boat_id].num + berth[i].loading_speed > boat_capacity)
-        {
-            berth[i].goods_num -= (boat_capacity-boat[berth[i].boat_id].num);
-            boat[berth[i].boat_id].num = boat_capacity;
-        }
-    }
-    char okk[100];//OK,表示交互结束
-    scanf("%s", okk);
-    return id;
+	scanf("%d%d", &id, &money);
+	int num;//场上新增货物数量
+	scanf("%d", &num);
+	for (int i = 0; i < num; i++)//接收新增货物并存储相关信息
+	{
+		goods new_good;
+		scanf("%d%d%d", &new_good.x, &new_good.y, &new_good.val);//接受货物的坐标及价值
+		new_good.state = 0;//将新增货物的状态标记为未装载
+		new_good.time = id + 1000;//记录消失时间
+		good.insert(new_good);
+	}
+	for (int i = 0; i < robot_num; i++)//接收机器人信息
+	{
+		int sts;//机器人状态，0为恢复，1为正常运行
+		scanf("%d%d%d%d", &robot[i].goods, &robot[i].x, &robot[i].y, &sts);//记录机器人状态
+		if(robot[i].status==0)robot_search(i);//若机器人不处于运输中状态，则选择目标
+	}
+	for (int i = 0; i < boat_num; i++)//接收船的信息
+	{
+		scanf("%d%d", &boat[i].status, &boat[i].pos);
+		if (boat[i].status == 1 && boat[i].pos != boat[i].local)//若船正常且目的地与位置不符，则已到达目标泊位
+		{
+			boat[i].local = boat[i].pos;
+		}
+		if (boat[i].pos == -1 && boat[i].local == -1 && boat[i].status == 1)//船处于虚拟点且无目标泊位，则搜索有货物的泊位
+		{
+			for (int j = 0; j < berth_num; j++)
+			{
+				if (berth[j].goods_num != 0 && berth[j].state == 0)
+				{
+					boat[i].id = j;
+					berth[j].state = 2;
+					boat->pos = j;
+				}
+			}
+		}
+	}
+	char okk[100];
+	scanf("%s", okk);
+	return id;
 }
-
+/*交互输出*/int Output()
+{
+	for (int i = 0; i < robot_num; i++)//处理机器人
+	{
+		if(robot[i].status==1)robot_move(i);//机器人移动
+	}
+	for (int i = 0; i < boat_num; i++)//处理船
+	{
+		if (boat[i].num == boat_capacity||berth[boat[i].id].goods_num==0&&boat[i].id!=-1)//如果载货量满或泊位货物数量为0，则返航
+		{
+			berth[boat[i].id].boat_id = -1;
+			boat[i].pos = -1;
+			printf("go %d\n", i);
+			fflush(stdout);
+		}
+		else if (boat[i].status == 1 && boat[i].pos != -1 && boat[i].local == -1)//船正常位于虚拟点且目标泊位不为虚拟点，则前往目标泊位
+		{
+			printf("ship %d\n", boat[i].pos);
+			fflush(stdout);
+		}
+	}
+	for (int i = 0; i < berth_num; i++)//处理泊位装货
+	{
+		if (berth[i].goods_num >= berth[i].loading_speed && boat[berth[i].boat_id].num + berth[i].loading_speed < boat_capacity)
+		{//如果泊位货物数量不小于每帧装载数量且船在装载后未到达最大容量
+			berth[i].goods_num -= berth[i].loading_speed;
+			boat[berth[i].boat_id].num += berth[i].loading_speed;
+		}
+		else if (berth[i].goods_num < berth[i].loading_speed)
+		{//若泊位货物数量小于每帧装载数量
+			boat[berth[i].boat_id].num -= berth[i].goods_num;
+			berth[i].goods_num = 0;
+		}
+		else if (boat[berth[i].boat_id].num + berth[i].loading_speed >= boat_capacity)
+		{//若船在装载后以达到最大容量
+			berth[i].goods_num -= (boat_capacity - boat[berth[i].boat_id].num);
+			boat[berth[i].boat_id].num = boat_capacity;
+			berth[i].state = 0;
+		}
+	}
+	return 0;
+}
 int main()
 {
-    Init();
-    for (int zhen = 1; zhen <= 15000; zhen++)
-    {
-        int id = Input();
-        cout << "OK" << endl;
-        fflush(stdout);
-    }
-    return 0;
+	Init();
+	for (; zhen <= 15000; zhen++)
+	{
+		Input();
+		Output();
+		printf("OK\n");
+		fflush(stdout);
+	}
 }
-//存在的问题：1.判断路径算法有极大改进空间 2.船确立泊位目标的函数有极大改进空间
