@@ -1,0 +1,23 @@
+﻿  main.c
+C:\Users\Arknights\Desktop\OJ\main.c(34,4): warning C4013: “information_output”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(37,4): warning C4013: “input”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(40,4): warning C4013: “find_meun”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(43,4): warning C4013: “score_sort”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(46,4): warning C4013: “score_statistics”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(49,4): warning C4013: “grades_compute”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(52,4): warning C4013: “grades_sort”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(55,4): warning C4013: “person_max”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(58,4): warning C4013: “person_min”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(61,4): warning C4013: “person_average”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(64,4): warning C4013: “class_max”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(67,4): warning C4013: “class_min”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(70,4): warning C4013: “class_average”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(73,4): warning C4013: “information_save”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(76,4): warning C4013: “information_load”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(79,4): warning C4013: “user_save”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(82,4): warning C4013: “user_load”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(88,3): warning C4013: “clean_screen”未定义；假设外部返回 int
+C:\Users\Arknights\Desktop\OJ\main.c(436,53): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
+C:\Users\Arknights\Desktop\OJ\main.c(445,55): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
+C:\Users\Arknights\Desktop\OJ\main.c(91): warning C4715: “main_meun”: 不是所有的控件路径都返回值
+  OJ.vcxproj -> C:\Users\Arknights\Desktop\OJ\x64\Debug\OJ.exe

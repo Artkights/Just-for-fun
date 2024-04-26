@@ -1,0 +1,211 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
+  "runs": [
+    {
+      "results": [
+        {
+          "ruleId": "C6387",
+          "message": {
+            "text": "“f”可能是“0”: 这不符合函数“fclose”的规范。"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/Users/Arknights/Desktop/OJ/File.c"
+                },
+                "region": {
+                  "startLine": 36,
+                  "startColumn": 2,
+                  "endLine": 36,
+                  "endColumn": 9
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "information_input",
+                  "decoratedName": "information_input",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///C:/Users/Arknights/Desktop/OJ/File.c"
+                          },
+                          "region": {
+                            "startLine": 6,
+                            "startColumn": 7
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///C:/Users/Arknights/Desktop/OJ/File.c"
+                          },
+                          "region": {
+                            "startLine": 7,
+                            "startColumn": 13
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///C:/Users/Arknights/Desktop/OJ/File.c"
+                          },
+                          "region": {
+                            "startLine": 8,
+                            "startColumn": 8
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///C:/Users/Arknights/Desktop/OJ/File.c"
+                          },
+                          "region": {
+                            "startLine": 9,
+                            "startColumn": 8
+                          }
+                        },
+                        "message": {
+                          "text": "“f”可能为 NULL (进入此分支)"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ]
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///C:/Users/Arknights/Desktop/OJ/File.c"
+                          },
+                          "region": {
+                            "startLine": 11,
+                            "startColumn": 9
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///C:/Users/Arknights/Desktop/OJ/File.c"
+                          },
+                          "region": {
+                            "startLine": 12,
+                            "startColumn": 3
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///C:/Users/Arknights/Desktop/OJ/File.c"
+                          },
+                          "region": {
+                            "startLine": 36,
+                            "startColumn": 2
+                          }
+                        },
+                        "message": {
+                          "text": "“f”是对“fclose”的输入(在 d:\\windows kits\\10\\include\\10.0.22621.0\\ucrt\\stdio.h:152 处声明)"
+                        }
+                      },
+                      "kinds": [
+                        "usage"
+                      ]
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///C:/Users/Arknights/Desktop/OJ/File.c"
+                          },
+                          "region": {
+                            "startLine": 36,
+                            "startColumn": 2
+                          }
+                        },
+                        "message": {
+                          "text": "“f”不应为 NULL，因为这与“fclose”上的 SAL 批注不一致"
+                        }
+                      },
+                      "kinds": [
+                        "usage"
+                      ],
+                      "importance": "essential"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "PREfast",
+          "fullName": "PREfast Code Analysis",
+          "version": "14.38.33133.0",
+          "informationUri": "https://aka.ms/cpp/ca"
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true
+        }
+      ],
+      "artifacts": [
+        {
+          "location": {
+            "uri": "file:///C:/Users/Arknights/Desktop/OJ/File.c"
+          },
+          "roles": [
+            "analysisTarget",
+            "resultFile"
+          ],
+          "hashes": {
+            "sha-256": "97ab168032fd7997cc996b58940a190de67020a712316ba818d1b71d1e18c56a"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///c:/users/arknights/desktop/oj/information struct.h"
+          },
+          "hashes": {
+            "sha-256": "622fd13859b8e698fe645fcf3fc2c2e9e6ba5ff7f82f101d8dc05a2beb359ad6"
+          }
+        }
+      ]
+    }
+  ]
+}
